@@ -1,77 +1,32 @@
-# Pokemon Showdown API Data Template
+# Speed Tiers Generator
 
-## Overview
+This script is designed to generate speed tiers for Pokémon based on various combinations of Individual Values (IVs), Effort Values (EVs), and Natures. The resulting speed tiers provide insights into the speed stats of different Pokémon under specific conditions. If you would like to see an example output file with the default configuration, please see 
+[example.json](./example.json) and [EXAMPLE.MD](./EXAMPLE.MD).
 
-This repository serves as a template for projects that require data from the Pokemon Showdown! API. The provided script allows users to easily fetch and manage data related to moves and the Pokedex.
+## Prerequisites
 
-## Installation
+Make sure you have the required dependencies installed. You can install them using the following command:
 
-1. Clone this repository to your local machine:
-
-    ```bash
-    git clone https://github.com/your-username/pokemon-showdown-api-template.git
-    ```
-
-2. Navigate to the project directory:
-
-    ```bash
-    cd pokemon-showdown-api-template
-    ```
-
-3. Install the required dependencies:
-
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-## Usage
-
-### Fetching Pokemon Showdown! Data
-
-The `showdown.py` script in the `src` directory provides a function to retrieve data from the Pokemon Showdown! API. The primary function is `get_showdown_data`, which fetches data for moves and the Pokedex.
-
-```python
-# Import the module
-import src.showdown as showdown
-
-# Get Showdown data files
-MOVES, POKEMON = showdown.get_showdown_data()
+```bash
+pip install -r requirements.txt
 ```
 
-The `get_showdown_data` function takes an optional argument `force` (default is `False`). When set to `True`, it forces a fresh download of the data even if the data files already exist.
+## Configuration
 
-### Data Directory
+Modify the `config.py` file to customize the script's behavior. Adjust settings such as output file names, sorting preferences, and more.
 
-The fetched data is stored in the `data` directory. Two files, `moves.json` and `pokedex.json`, respectively, contain the moves and Pokedex information.
+## Running the Script
 
-### Example
+Execute the script to generate speed tiers:
 
-```python
-# Import the module
-import src.showdown as showdown
-
-# Get Showdown data files, force a fresh download
-MOVES, POKEMON = showdown.get_showdown_data(force=True)
+```bash
+python main.py
 ```
 
-## Data Structure
+## Output
 
-### Moves Data
+The script generates output in two formats:
 
-The moves data is stored in the `moves.json` file. It includes information about various Pokemon moves.
+1. **JSON File**: If configured, a JSON file is created with speed tiers and corresponding Pokémon benchmarks.
 
-### Pokedex Data
-
-The Pokedex data is stored in the `pokedex.json` file. It contains comprehensive information about Pokemon species.
-
-## Dependencies
-
-- `requests==2.26.0`
-
-## Contributing
-
-Feel free to contribute to this template to enhance its functionality or usability. Submit issues or pull requests as needed.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+2. **Markdown File**: If configured, a Markdown file is generated with a table displaying speed tiers, the number of benchmarks in each tier, and specific Pokémon benchmarks.

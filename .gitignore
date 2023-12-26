@@ -1,6 +1,9 @@
 # Showdown Data
 data
 
+# Output Folder
+out
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
