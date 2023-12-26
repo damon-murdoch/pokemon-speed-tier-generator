@@ -23,8 +23,22 @@ OUTPUT_FOLDER = 'out'
 # Output json file path
 OUTPUT_JSON = 'tiers.json'
 
+# If set to true, species-specific
+# report dumping to json will be
+# enabled - otherwise, will be disabled
+# Reports generated will be named
+# [species-name].json
+SPECIES_JSON = True
+
 # Output markdown file path
 OUTPUT_MD = 'TIERS.MD'
+
+# If set to true, species-specific
+# report dumping to markdown will be
+# enabled - otherwise, will be disabled
+# Reports generated will be named
+# [species-name].md
+SPECIES_MD = True
 
 # Level for which the calculations will
 # be run (Use level 100 for Smogon Formats)

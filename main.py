@@ -14,7 +14,16 @@ import json as JSON
 import math
 
 # OS Library
-import os
+import sys, os
+
+
+# Check if the current stat is a jump stat
+def is_jump_stat(last_value, current_value):
+    # Return true if the last value was not none, and difference between
+    # the last value and the current value (regardless of signedness) is
+    # greater than one (i.e. 2+ stat jumps between values)
+    return last_value != None and abs(last_value - current_value) > 1
+
 
 # Main Process
 if __name__ == "__main__":
@@ -79,7 +88,7 @@ if __name__ == "__main__":
                     stage_string = f"+{stage} {stage_string}"
 
                     # Calculate the stage modifier
-                    stage_modifier = (1 + (stage * 0.5))
+                    stage_modifier = 1 + (stage * 0.5)
 
                     # Apply stage modifier to the stat
                     stage_stat = math.floor(stage_stat * stage_modifier)
@@ -91,6 +100,12 @@ if __name__ == "__main__":
                 else:
                     # Create a new entry with the speed tier
                     speed_tiers[stage_stat] = [stage_string]
+
+    # Get all of the speed stats
+    tiers = list(speed_tiers.keys())
+
+    # Sort the tiers based on the sort config
+    tiers.sort(reverse=CONFIG.SORT_SLOWEST_FIRST)
 
     # Ensure the output directory exists
     os.makedirs(CONFIG.OUTPUT_FOLDER, exist_ok=True)
@@ -112,22 +127,11 @@ if __name__ == "__main__":
 
     # Output markdown is not none
     if CONFIG.OUTPUT_MD != None:
-
         # Content string array
-        content = [
-            "| Speed | Amount | Benchmarks |", 
-            "| ----- | ------ | ---------- |"
-        ]
-
-        # Get all of the speed stats
-        tiers = list(speed_tiers.keys())
-
-        # Sort the tiers based on the sort config
-        tiers.sort(reverse=CONFIG.SORT_SLOWEST_FIRST)
+        content = ["| Speed | Amount | Benchmarks |", "| ----- | ------ | ---------- |"]
 
         # Loop over the sorted array
         for tier in tiers:
-
             # Get the data for the speed tier
             tier_data = speed_tiers[tier]
 
@@ -147,6 +151,240 @@ if __name__ == "__main__":
         md_path = os.path.join(CONFIG.OUTPUT_FOLDER, CONFIG.OUTPUT_MD)
 
         # Open the md report file
-        with open(md_path, "w+", encoding='utf8') as file:
+        with open(md_path, "w+", encoding="utf8") as file:
             # Write the data to the file
             file.write(output)
+
+    # Get the script arguments
+    args = sys.argv[1:]
+
+    # At least one argument
+    if len(args) > 0:
+        # Loop over the arguments
+        for arg in args:
+            # If the arg is a valid species
+            if arg in POKEMON:
+                report = {}
+
+                # Dereference species data
+                species = POKEMON[arg]
+                name = species["name"]
+
+                print(f"Processing species {name} ...")
+
+                # Get the base stats for the species
+                base_stats = species["baseStats"]
+                base_speed = base_stats["spe"]
+
+                # Positive nature
+                ev_positive = {}
+
+                # Neutral nature
+                ev_neutral = {}
+
+                # Checks to see if evs change stats
+                # compared to previous (lower) number
+                last_positive = None
+                last_neutral = None
+
+                # Loop over the range of evs
+                for evs in range(0, 256, 4):
+                    # Calculate positive nature speed stat
+                    speed_positive = util.calculate_stat(
+                        base_speed,
+                        CONFIG.LEVEL,
+                        31,
+                        evs,
+                        CONFIG.NATURE_POSITIVE,
+                    )
+
+                    # If the last stat was null, or new stat is higher
+                    if last_positive == None or last_positive < speed_positive:
+
+                        # Benchmarks reached
+                        benchmark = []
+
+                        # Check if the current stat is a jump stat
+                        jump_stat = is_jump_stat(last_positive, speed_positive)
+
+                        # Stat is a jump stat
+                        if jump_stat == True:
+
+                            # Get benchmark speed
+                            benchmark_speed = speed_positive - 2
+
+                            # Speed is in speed tiers list
+                            if benchmark_speed in tiers:
+                                # Add the benchmarks to the list
+                                benchmark += speed_tiers[benchmark_speed]
+
+                        # Get benchmark speed
+                        benchmark_speed = speed_positive - 1
+
+                        # Speed is in speed tiers list
+                        if benchmark_speed in tiers:
+                            # Add the benchmarks to the list
+                            benchmark += speed_tiers[benchmark_speed]
+
+                        # At least one benchmark reached
+                        if len(benchmark) > 0:
+
+                            # Add the benchmark values to the nature list
+                            ev_positive[evs] = {
+                                "jump": jump_stat,
+                                "stat": speed_positive,
+                                "speedties": speed_tiers[speed_positive],
+                                "benchmark": benchmark,
+                            }
+
+                        # Update last positive
+                        last_positive = speed_positive
+
+                    # Calculate neutral nature speed stat
+                    speed_neutral = util.calculate_stat(
+                        base_speed,
+                        CONFIG.LEVEL,
+                        31,
+                        evs,
+                        CONFIG.NATURE_NEUTRAL,
+                    )
+
+                    # If the last stat was null, or new stat is higher
+                    if last_neutral == None or last_neutral < speed_neutral:
+                        # Get benchmark speed
+                        benchmark = speed_neutral - 1
+
+                        # If the speed stat below is in the tier list
+                        if benchmark in tiers:
+                            # Add the benchmark values to the nature list
+                            ev_neutral[evs] = {
+                                "jump": False, # Not possible for neutral natures
+                                "stat": speed_neutral,
+                                "speedties": speed_tiers[speed_neutral],
+                                "benchmark": speed_tiers[benchmark],
+                            }
+
+                        # Update last neutral
+                        last_neutral = speed_neutral
+
+                # Positive nature
+                iv_neutral = {}
+
+                # Neutral nature
+                iv_negative = {}
+
+                # Checks to see if evs change stats
+                # compared to previous (lower) number
+                last_neutral = None
+                last_negative = None
+
+                # Loop over iv ranges
+                for ivs in range(0, 32):
+                    # Calculate positive nature speed stat
+                    speed_neutral = util.calculate_stat(
+                        base_speed,
+                        CONFIG.LEVEL,
+                        ivs,
+                        0,
+                        CONFIG.NATURE_NEUTRAL,
+                    )
+
+                    # If the last stat was null, or new stat is higher
+                    if last_neutral == None or last_neutral < speed_neutral:
+                        # Get benchmark speed
+                        benchmark = speed_neutral - 1
+
+                        # If the speed stat below is in the tier list
+                        if benchmark in tiers:
+                            # Add the benchmark values to the nature list
+                            iv_neutral[ivs] = {
+                                "jump": False, # Not possible for neutral natures
+                                "stat": speed_neutral,
+                                "speedties": speed_tiers[speed_neutral],
+                                "benchmark": speed_tiers[benchmark],
+                            }
+
+                        # Update last positive
+                        last_neutral = speed_neutral
+
+                    # Calculate neutral nature speed stat
+                    speed_negative = util.calculate_stat(
+                        base_speed,
+                        CONFIG.LEVEL,
+                        ivs,
+                        0,
+                        CONFIG.NATURE_NEGATIVE,
+                    )
+
+                    # If the last stat was null, or new stat is higher
+                    if last_negative == None or last_negative < speed_negative:
+
+                        # Benchmarks reached
+                        benchmark = []
+
+                        # Check if the current stat is a jump stat
+                        jump_stat = is_jump_stat(last_negative, speed_negative)
+
+                        # Stat is a jump stat
+                        if jump_stat == True:
+
+                            # Get benchmark speed
+                            benchmark_speed = speed_negative - 2
+
+                            # Speed is in speed tiers list
+                            if benchmark_speed in tiers:
+                                # Add the benchmarks to the list
+                                benchmark += speed_tiers[benchmark_speed]
+
+                        # Get benchmark speed
+                        benchmark_speed = speed_positive - 1
+
+                        # Speed is in speed tiers list
+                        if benchmark_speed in tiers:
+                            # Add the benchmarks to the list
+                            benchmark += speed_tiers[benchmark_speed]
+
+                        # At least one benchmark reached
+                        if len(benchmark) > 0:
+
+                            # Add the benchmark values to the nature list
+                            iv_negative[ivs] = {
+                                "jump": jump_stat,
+                                "stat": speed_negative,
+                                "speedties": speed_tiers[speed_negative],
+                                "benchmark": benchmark,
+                            }
+
+                        # Update last negative
+                        last_negative = speed_negative
+
+                # Build the final report
+                report = {
+                    "species": species, 
+                    "positive_ev": ev_positive,
+                    "neutral_ev": ev_neutral,
+                    "neutral_iv": iv_neutral,
+                    "negative_iv": iv_negative,
+                }
+
+                # Export species to json format
+                if CONFIG.SPECIES_JSON == True:
+                    # Generate a json string from the table
+                    output = JSON.dumps(
+                        report,
+                        sort_keys=CONFIG.JSON_SORT_KEYS,
+                        indent=CONFIG.JSON_INDENT,
+                    )
+
+                    # Generate json filename
+                    species_json = f"{name}.json"
+
+                    # Generate output json file full path
+                    json_path = os.path.join(CONFIG.OUTPUT_FOLDER, species_json)
+
+                    # Open the json report file path
+                    with open(json_path, "w+") as file:
+                        # Dump the report data to the file
+                        file.write(output)
+            else:
+                print(f"Failed for argument '{arg}': Unable to find matching species!")
