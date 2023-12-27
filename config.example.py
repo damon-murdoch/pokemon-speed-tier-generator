@@ -50,6 +50,20 @@ LEVEL = 50
 # sorted with fastest at the top.
 SORT_SLOWEST_FIRST = False
 
+# Pokedex numbers to include/exlude
+# These arguments are not mutually exclusive, 
+# however somewhat redundant when used together
+# In order to disable one of these arguments, 
+# assign the value to 'None'. 
+
+# Species to include
+INCLUDE_SPECIES = [
+    *range(1,1026)
+] # []
+
+# Species to exlude
+EXCLUDE_SPECIES = None # []
+
 # Stat Combination to calculate, for each species
 STAT_COMBINATIONS = [
     {"evs": 252, "ivs": 31, "nature": NATURE_POSITIVE},

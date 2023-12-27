@@ -25,6 +25,28 @@ def is_jump_stat(last_value, current_value):
     return last_value != None and abs(last_value - current_value) > 1
 
 
+def build_spread_string(ivs, evs, nature, species=None):
+    # Start building the combo string
+
+    # Add the ivs/evs
+    spread_string = f"{ivs}/{evs}"
+
+    # Positive nature, add plus to string
+    if nature == CONFIG.NATURE_POSITIVE:
+        spread_string = f"{spread_string}+"
+    # Negative nature, add minus to string
+    elif nature == CONFIG.NATURE_NEGATIVE:
+        spread_string = f"{spread_string}-"
+
+    # Species is defined
+    if species:
+        # Add the species name to the combo string
+        spread_string = f"{spread_string} {species}"
+
+    # Return spread string
+    return spread_string
+
+
 # Main Process
 if __name__ == "__main__":
     # Get showdown data files
@@ -35,11 +57,24 @@ if __name__ == "__main__":
     # value: Pokemon which reach this stat (with conditions) (e.g. 252+ Mega Kangaskhan)
     speed_tiers = {}
 
+    # Species Inclusions, Exclusions
+    exclude_species = CONFIG.EXCLUDE_SPECIES
+    include_species = CONFIG.INCLUDE_SPECIES
+
     # Loop over all of the Pokemon
     for pokemon in POKEMON:
         # Get the data for the species
         pokemon_data = POKEMON[pokemon]
         species = pokemon_data["name"]
+        number = pokemon_data["num"]
+
+        # If the exclusion list is set, and species is in the set
+        if exclude_species != None and number in exclude_species:
+            continue # Skip this species
+
+        # If the inclusion list is set, and species is not in the set
+        if include_species != None and number not in include_species:
+            continue # Skip this species
 
         # Dereference values
         base_stats = pokemon_data["baseStats"]
@@ -64,17 +99,7 @@ if __name__ == "__main__":
             # Start building the combo string
 
             # Add the evs
-            combo_string = f"{ivs}/{evs}"
-
-            # Positive nature, add plus to string
-            if nature == CONFIG.NATURE_POSITIVE:
-                combo_string = f"{combo_string}+"
-            # Negative nature, add minus to string
-            elif nature == CONFIG.NATURE_NEGATIVE:
-                combo_string = f"{combo_string}-"
-
-            # Add species to the combo string
-            combo_string = f"{combo_string} {species}"
+            combo_string = build_spread_string(ivs, evs, nature, species)
 
             # Loop over the stages
             for stage in CONFIG.STAGES:
@@ -200,7 +225,6 @@ if __name__ == "__main__":
 
                     # If the last stat was null, or new stat is higher
                     if last_positive == None or last_positive < speed_positive:
-
                         # Benchmarks reached
                         benchmark = []
 
@@ -209,7 +233,6 @@ if __name__ == "__main__":
 
                         # Stat is a jump stat
                         if jump_stat == True:
-
                             # Get benchmark speed
                             benchmark_speed = speed_positive - 2
 
@@ -229,11 +252,18 @@ if __name__ == "__main__":
                         # At least one benchmark reached
                         if len(benchmark) > 0:
 
+                            # Speed ties list
+                            speed_ties = []
+
+                            # Speed tying speed tier in list
+                            if speed_positive in speed_tiers:
+                                speed_ties = speed_tiers[speed_positive]
+
                             # Add the benchmark values to the nature list
                             ev_positive[evs] = {
                                 "jump": jump_stat,
                                 "stat": speed_positive,
-                                "speedties": speed_tiers[speed_positive],
+                                "speedties": speed_ties,
                                 "benchmark": benchmark,
                             }
 
@@ -256,11 +286,19 @@ if __name__ == "__main__":
 
                         # If the speed stat below is in the tier list
                         if benchmark in tiers:
+                            
+                            # Speed ties list
+                            speed_ties = []
+
+                            # Speed tying speed tier in list
+                            if speed_neutral in speed_tiers:
+                                speed_ties = speed_tiers[speed_neutral]
+
                             # Add the benchmark values to the nature list
                             ev_neutral[evs] = {
-                                "jump": False, # Not possible for neutral natures
+                                "jump": False,  # Not possible for neutral natures
                                 "stat": speed_neutral,
-                                "speedties": speed_tiers[speed_neutral],
+                                "speedties": speed_ties,
                                 "benchmark": speed_tiers[benchmark],
                             }
 
@@ -296,11 +334,19 @@ if __name__ == "__main__":
 
                         # If the speed stat below is in the tier list
                         if benchmark in tiers:
+                            
+                            # Speed ties list
+                            speed_ties = []
+
+                            # Speed tying speed tier in list
+                            if speed_neutral in speed_tiers:
+                                speed_ties = speed_tiers[speed_neutral]
+
                             # Add the benchmark values to the nature list
                             iv_neutral[ivs] = {
-                                "jump": False, # Not possible for neutral natures
+                                "jump": False,  # Not possible for neutral natures
                                 "stat": speed_neutral,
-                                "speedties": speed_tiers[speed_neutral],
+                                "speedties": speed_ties,
                                 "benchmark": speed_tiers[benchmark],
                             }
 
@@ -318,7 +364,6 @@ if __name__ == "__main__":
 
                     # If the last stat was null, or new stat is higher
                     if last_negative == None or last_negative < speed_negative:
-
                         # Benchmarks reached
                         benchmark = []
 
@@ -327,7 +372,6 @@ if __name__ == "__main__":
 
                         # Stat is a jump stat
                         if jump_stat == True:
-
                             # Get benchmark speed
                             benchmark_speed = speed_negative - 2
 
@@ -347,11 +391,18 @@ if __name__ == "__main__":
                         # At least one benchmark reached
                         if len(benchmark) > 0:
 
+                            # Speed ties list
+                            speed_ties = []
+
+                            # Speed tying speed tier in list
+                            if speed_negative in speed_tiers:
+                                speed_ties = speed_tiers[speed_negative]
+
                             # Add the benchmark values to the nature list
                             iv_negative[ivs] = {
                                 "jump": jump_stat,
                                 "stat": speed_negative,
-                                "speedties": speed_tiers[speed_negative],
+                                "speedties": speed_ties,
                                 "benchmark": benchmark,
                             }
 
@@ -360,7 +411,7 @@ if __name__ == "__main__":
 
                 # Build the final report
                 report = {
-                    "species": species, 
+                    "species": species,
                     "positive_ev": ev_positive,
                     "neutral_ev": ev_neutral,
                     "neutral_iv": iv_neutral,
@@ -384,6 +435,127 @@ if __name__ == "__main__":
 
                     # Open the json report file path
                     with open(json_path, "w+") as file:
+                        # Dump the report data to the file
+                        file.write(output)
+
+                # Export species to markdown format
+                if CONFIG.SPECIES_MD == True:
+                    content = [
+                        "| Spread | Stat | Jump | Benchmarks | Speed Ties |",
+                        "| ------ | ---- | ---- | ---------- | ---------- |",
+                    ]
+
+                    # Sort the positive evs from highest to lowest
+                    ev_pos_sorted = list(ev_positive.keys())
+                    ev_pos_sorted.sort(reverse=True)
+
+                    # Loop over the sorted evs
+                    for ev in ev_pos_sorted:
+                        # Get the data from the report
+                        ev_data = ev_positive[ev]
+                        stat = ev_data["stat"]
+                        jump = ev_data["jump"]
+
+                        # Build the benchmarks, speed ties string
+                        benchmark = ", ".join(ev_data["benchmark"])
+                        speed_ties = ", ".join(ev_data["speedties"])
+
+                        # Generate spread string
+                        spread_string = build_spread_string(
+                            31, ev, CONFIG.NATURE_POSITIVE
+                        )
+
+                        # Add row for spread to report
+                        content.append(
+                            f"| {spread_string} | {stat} | {jump} | {benchmark} | {speed_ties} |"
+                        )
+
+                    # Sort the neutral evs from highest to lowest
+                    ev_neu_sorted = list(ev_neutral.keys())
+                    ev_neu_sorted.sort(reverse=True)
+
+                    # Loop over the sorted evs
+                    for ev in ev_neu_sorted:
+                        # Get the data from the report
+                        ev_data = ev_neutral[ev]
+                        stat = ev_data["stat"]
+                        jump = ev_data["jump"]
+
+                        # Build the benchmarks, speed ties string
+                        benchmark = ", ".join(ev_data["benchmark"])
+                        speed_ties = ", ".join(ev_data["speedties"])
+
+                        # Generate spread string
+                        spread_string = build_spread_string(
+                            31, ev, CONFIG.NATURE_NEUTRAL
+                        )
+
+                        # Add row for spread to report
+                        content.append(
+                            f"| {spread_string} | {stat} | {jump} | {benchmark} | {speed_ties} |"
+                        )
+
+                    # Sort the neutral ivs from highest to lowest
+                    iv_neu_sorted = list(iv_neutral.keys())
+                    iv_neu_sorted.sort(reverse=True)
+
+                    # Loop over the sorted ivs
+                    for iv in iv_neu_sorted:
+                        # Get the data from the report
+                        iv_data = iv_neutral[iv]
+                        stat = iv_data["stat"]
+                        jump = iv_data["jump"]
+
+                        # Build the benchmarks, speed ties string
+                        benchmark = ", ".join(iv_data["benchmark"])
+                        speed_ties = ", ".join(iv_data["speedties"])
+
+                        # Generate spread string
+                        spread_string = build_spread_string(
+                            iv, 0, CONFIG.NATURE_NEUTRAL
+                        )
+
+                        # Add row for spread to report
+                        content.append(
+                            f"| {spread_string} | {stat} | {jump} | {benchmark} | {speed_ties} |"
+                        )
+
+                    # Sort the neutral ivs from highest to lowest
+                    iv_neg_sorted = list(iv_negative.keys())
+                    iv_neg_sorted.sort(reverse=True)
+
+                    # Loop over the sorted ivs
+                    for iv in iv_neg_sorted:
+                        # Get the data from the report
+                        iv_data = iv_negative[iv]
+                        stat = iv_data["stat"]
+                        jump = iv_data["jump"]
+
+                        # Build the benchmarks, speed ties string
+                        benchmark = ", ".join(iv_data["benchmark"])
+                        speed_ties = ", ".join(iv_data["speedties"])
+
+                        # Generate spread string
+                        spread_string = build_spread_string(
+                            iv, 0, CONFIG.NATURE_NEGATIVE
+                        )
+
+                        # Add row for spread to report
+                        content.append(
+                            f"| {spread_string} | {stat} | {jump} | {benchmark} | {speed_ties} |"
+                        )
+
+                    # Join the output contents
+                    output = "\n".join(content)
+
+                    # Generate md filename
+                    species_md = f"{name}.md"
+
+                    # Generate output md file full path
+                    md_path = os.path.join(CONFIG.OUTPUT_FOLDER, species_md)
+
+                    # Open the md report file path
+                    with open(md_path, "w+", encoding="utf8") as file:
                         # Dump the report data to the file
                         file.write(output)
             else:
